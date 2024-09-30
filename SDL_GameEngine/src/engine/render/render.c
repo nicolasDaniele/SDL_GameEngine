@@ -7,8 +7,8 @@
 static Render_State_Internal state = {0};
 
 void render_init(void) {
-	global.render.width = 800;
-	global.render.height = 600;
+	global.render.width = 1920;
+	global.render.height = 1080;
 	global.render.window = render_init_window(global.render.width, global.render.height);
 
 	render_init_quad(&state.vao_quad, &state.vbo_quad, &state.ebo_quad);
@@ -49,20 +49,6 @@ void render_quad(vec2 pos, vec2 size, vec4 color) {
 	glBindVertexArray(0);
 }
 
-void render_quad_line(vec2 pos, vec2 size, vec4 color) {
-	vec2 points[4] = {
-		{pos[0] - size[0] * 0.5, pos[1] - size[1] * 0.5},
-		{pos[0] + size[0] * 0.5, pos[1] - size[1] * 0.5},
-		{pos[0] + size[0] * 0.5, pos[1] + size[1] * 0.5},
-		{pos[0] - size[0] * 0.5, pos[1] + size[1] * 0.5},
-	};
-
-	render_line_segment(points[0], points[1], color);
-	render_line_segment(points[1], points[2], color);
-	render_line_segment(points[2], points[3], color);
-	render_line_segment(points[3], points[0], color);
-}
-
 void render_line_segment(vec2 start, vec2 end, vec4 color) {
 	glUseProgram(state.shader_default);
 	glLineWidth(3);
@@ -85,6 +71,20 @@ void render_line_segment(vec2 start, vec2 end, vec4 color) {
 	glDrawArrays(GL_LINES, 0, 2);
 
 	glBindVertexArray(0);
+}
+
+void render_quad_line(vec2 pos, vec2 size, vec4 color) {
+	vec2 points[4] = {
+		{pos[0] - size[0] * 0.5, pos[1] - size[1] * 0.5},
+		{pos[0] + size[0] * 0.5, pos[1] - size[1] * 0.5},
+		{pos[0] + size[0] * 0.5, pos[1] + size[1] * 0.5},
+		{pos[0] - size[0] * 0.5, pos[1] + size[1] * 0.5},
+	};
+
+	render_line_segment(points[0], points[1], color);
+	render_line_segment(points[1], points[2], color);
+	render_line_segment(points[2], points[3], color);
+	render_line_segment(points[3], points[0], color);
 }
 
 void render_aabb(f32 *aabb, vec4 color) {
