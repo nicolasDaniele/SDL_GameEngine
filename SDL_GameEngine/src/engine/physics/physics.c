@@ -7,7 +7,7 @@
 
 static Physics_State_Internal state;
 
-static ui32 iterations = 8;
+static ui32 iterations = 4;
 static f32 tick_rate;
 
 void aabb_min_max(vec2 min, vec2 max, AABB aabb) {
@@ -67,8 +67,8 @@ void physics_init(void) {
 	state.body_list = array_list_create(sizeof(Body), 0);
 	state.static_body_list = array_list_create(sizeof(Static_Body), 0);
 
-	state.gravity = -200;
-	state.terminal_velocity = -10000;
+	state.gravity = -100;
+	state.terminal_velocity = -7000;
 
 	tick_rate = 1.f / iterations;
 }

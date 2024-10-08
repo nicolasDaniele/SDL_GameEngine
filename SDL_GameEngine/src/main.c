@@ -13,6 +13,7 @@
 #include "engine/physics.h"
 #include "engine/util.h"
 #include "engine/entity.h"
+#include "engine/render.h"
 
 typedef enum collision_layer {
 	COLLISION_LAYER_PLAYER = 1,
@@ -32,15 +33,13 @@ static void input_handle(Body *body_player) {
 	f32 vely = body_player->velocity[1];
 
 	if(global.input.right)
-		velx += 1000;
+		velx += 6000;
 	if(global.input.left)
-		velx -= 1000;
+		velx -= 6000;
 	if(global.input.up && player_is_grounded) {
 		player_is_grounded = false;
-		vely = 2500;
+		vely = 2000;
 	}
-	if(global.input.down)
-		vely -= 800;
 
 	body_player->velocity[0] = velx;
 	body_player->velocity[1] = vely;
@@ -61,18 +60,18 @@ void player_on_hit_static(Body *self, Static_Body *other, Hit hit) {
 
 void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit) {
 	if(hit.normal[0] > 0) {
-		self->velocity[0] = 700;
+		self->velocity[0] = 400;
 	}
 
 	if(hit.normal[0] < 0) {
-		self->velocity[0] = -700;
+		self->velocity[0] = -400;
 	} 
 }
 
 int main(int argc, char *argv[]) {
 	time_init(60);
 	config_init();
-	render_init();
+	SDL_Window *window = render_init();
 	physics_init();
 	entity_init();
 
@@ -81,19 +80,21 @@ int main(int argc, char *argv[]) {
 	ui8 enemy_mask = COLLISION_LAYER_PLAYER | COLLISION_LAYER_TERRAIN;
 	ui8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN;
 
-	usize player_id = entity_create((vec2){100, 800}, (vec2){100, 100}, (vec2){0, 0} , COLLISION_LAYER_PLAYER, player_mask, player_on_hit, player_on_hit_static);
+	usize player_id = entity_create((vec2){100, 200}, (vec2){24, 24}, (vec2){0, 0} , COLLISION_LAYER_PLAYER, player_mask, player_on_hit, player_on_hit_static);
 
-	f32 width = global.render.width;
-	f32 height = global.render.height;
+	i32 window_width, window_height;
+	SDL_GetWindowSize(window, &window_width, &window_height);
+	f32 width = window_width / render_get_scale();
+	f32 height = window_height / render_get_scale();
 
-	ui32 static_body_a_id = physics_static_body_create((vec2){width * 0.5, height - 25}, (vec2){width - 50, 50}, COLLISION_LAYER_TERRAIN);
-	ui32 static_body_b_id = physics_static_body_create((vec2){width -25, height * 0.5 + 25}, (vec2){50, height - 50}, COLLISION_LAYER_TERRAIN);
-	ui32 static_body_c_id = physics_static_body_create((vec2){width * 0.5 +25, 25}, (vec2){width - 50, 50}, COLLISION_LAYER_TERRAIN);
-	ui32 static_body_d_id = physics_static_body_create((vec2){25, height * 0.5 - 25}, (vec2){50, height - 50}, COLLISION_LAYER_TERRAIN);
-	ui32 static_body_e_id = physics_static_body_create((vec2){width * 0.5, height * 0.5}, (vec2){150, 150}, COLLISION_LAYER_TERRAIN);
+	ui32 static_body_a_id = physics_static_body_create((vec2){width * 0.5, height - 12.5}, (vec2){width - 25, 25}, COLLISION_LAYER_TERRAIN);
+	ui32 static_body_b_id = physics_static_body_create((vec2){width -12.5, height * 0.5 + 25}, (vec2){25, height - 25}, COLLISION_LAYER_TERRAIN);
+	ui32 static_body_c_id = physics_static_body_create((vec2){width * 0.5 +12.5, 12.5}, (vec2){width - 25, 25}, COLLISION_LAYER_TERRAIN);
+	ui32 static_body_d_id = physics_static_body_create((vec2){12.5, height * 0.5 - 12.5}, (vec2){50, height - 25}, COLLISION_LAYER_TERRAIN);
+	ui32 static_body_e_id = physics_static_body_create((vec2){width * 0.5, height * 0.5}, (vec2){62.5, 62.5}, COLLISION_LAYER_TERRAIN);
 
-	usize entity_a_id = entity_create((vec2){600, 600}, (vec2){50, 50}, (vec2){900, 0}, COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
-	usize entity_b_id = entity_create((vec2){800, 800}, (vec2){50, 50}, (vec2){900, 0}, COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
+	usize entity_a_id = entity_create((vec2){200, 200}, (vec2){25, 25}, (vec2){400, 0}, COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
+	usize entity_b_id = entity_create((vec2){300, 300}, (vec2){25, 25}, (vec2){400, 0}, COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
 
 	while(!should_quit) {
 		time_update();
@@ -135,7 +136,7 @@ int main(int argc, char *argv[]) {
 		render_aabb((f32*)physics_body_get(entity_get(entity_a_id)->body_id), WHITE);
 		render_aabb((f32*)physics_body_get(entity_get(entity_b_id)->body_id), WHITE);
 
-		render_end();
+		render_end(window);
 		
 		player_color[0] = 0;
 		player_color[2] = 1;
