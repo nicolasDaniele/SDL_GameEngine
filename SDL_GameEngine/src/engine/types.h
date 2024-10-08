@@ -1,6 +1,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <stddef.h>
 
 typedef uint8_t ui8;
 typedef uint16_t ui16;
