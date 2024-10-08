@@ -47,8 +47,6 @@ static void input_handle(Body *body_player) {
 }
 
 void player_on_hit(Body *self, Body *other, Hit hit) {
-	printf("PLAYER ON HIT\n");
-	
 	if(other->collision_layer == COLLISION_LAYER_ENEMY) {
 		player_color[0] = 1;
 		player_color[2] = 0;
@@ -56,16 +54,12 @@ void player_on_hit(Body *self, Body *other, Hit hit) {
 }
 
 void player_on_hit_static(Body *self, Static_Body *other, Hit hit) {
-	printf("PLAYER ON HIT STATIC\n");
-
 	if(hit.normal[1] > 0) {
 		player_is_grounded = true;
 	}
 }
 
 void enemy_on_hit_static(Body *self, Static_Body *other, Hit hit) {
-	printf("ENEMY ON HIT\n");
-
 	if(hit.normal[0] > 0) {
 		self->velocity[0] = 700;
 	}
@@ -87,10 +81,6 @@ int main(int argc, char *argv[]) {
 	ui8 enemy_mask = COLLISION_LAYER_PLAYER | COLLISION_LAYER_TERRAIN;
 	ui8 player_mask = COLLISION_LAYER_ENEMY | COLLISION_LAYER_TERRAIN;
 
-	printf("player_mask: %d\n", player_mask);
-	printf("enemy_mask: %d\n", enemy_mask);
-	printf("COLLISION_LAYER_TERRAIN: %d\n", COLLISION_LAYER_TERRAIN);
-
 	usize player_id = entity_create((vec2){100, 800}, (vec2){100, 100}, (vec2){0, 0} , COLLISION_LAYER_PLAYER, player_mask, player_on_hit, player_on_hit_static);
 
 	f32 width = global.render.width;
@@ -103,7 +93,7 @@ int main(int argc, char *argv[]) {
 	ui32 static_body_e_id = physics_static_body_create((vec2){width * 0.5, height * 0.5}, (vec2){150, 150}, COLLISION_LAYER_TERRAIN);
 
 	usize entity_a_id = entity_create((vec2){600, 600}, (vec2){50, 50}, (vec2){900, 0}, COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
-	usize entity_b_id = entity_create((vec2){800, 800}, (vec2){50, 50}, (vec2){900, 0}, 0, enemy_mask, NULL, enemy_on_hit_static);
+	usize entity_b_id = entity_create((vec2){800, 800}, (vec2){50, 50}, (vec2){900, 0}, COLLISION_LAYER_ENEMY, enemy_mask, NULL, enemy_on_hit_static);
 
 	while(!should_quit) {
 		time_update();

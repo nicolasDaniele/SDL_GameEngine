@@ -5,11 +5,9 @@
 #include "../physics.h"
 #include "physics_internal.h"
 
-#include <stdio.h>
-
 static Physics_State_Internal state;
 
-static ui32 iterations = 4;
+static ui32 iterations = 8;
 static f32 tick_rate;
 
 void aabb_min_max(vec2 min, vec2 max, AABB aabb) {
@@ -85,7 +83,6 @@ static void update_sweep_result(Hit *result, usize other_id, AABB a, AABB b, vec
 
 	Hit hit = ray_intersect_aabb(a.position, velocity, sum_aabb);
 	if(hit.is_hit) {
-		//printf("update_sweep_result: hit.is_hit\n");
 		if(hit.time < result->time) {
 			*result = hit;
 		}
@@ -132,15 +129,12 @@ static void sweep_response(Body *body, vec2 velocity) {
 	Hit hit_moving = sweep_bodies(body, velocity);
 
 	if(hit_moving.is_hit) {
-		//printf("sweep_response: HIT_MOVING IS HIT\n");
 		if(body->on_hit != NULL) {
-			printf("sweep_response calling: body->on_hit\n");
 			body->on_hit(body, physics_body_get(hit_moving.other_id), hit_moving);
 		}
 	}
 
 	if(hit.is_hit) {
-		printf("sweep_response: HIT IS HIT || body->collision_layer: %d || body->collision_mask: %d\n", body->collision_layer, body->collision_mask);
 		body->aabb.position[0] = hit.position[0];
 		body->aabb.position[1] = hit.position[1];
 
@@ -153,7 +147,7 @@ static void sweep_response(Body *body, vec2 velocity) {
 			body->velocity[1] = 0;
 		}
 
-		if(body->on_hit_static= NULL) {
+		if(body->on_hit_static != NULL) {
 			body->on_hit_static(body, physics_static_body_get(hit.other_id), hit);
 		}
 	}
