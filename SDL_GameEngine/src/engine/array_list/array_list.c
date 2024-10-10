@@ -3,6 +3,8 @@
 #include "../util.h"
 #include "../array_list.h"
 
+#include <stdio.h>
+
 Array_List *array_list_create(usize item_size, usize initial_capacity) {
 	Array_List *list = malloc(sizeof(Array_List));
 	if(!list) {
@@ -42,6 +44,8 @@ usize array_list_append(Array_List *list, void *item) {
 
 void *array_list_get(Array_List *list, usize index) {
 	if(index >= list->len) {
+		printf("WARNING: array_list_get: Index %zd our of bounds\n", index);
+
 		ERROR_RETURN(NULL, "Index out of bounds\n");
 	}
 

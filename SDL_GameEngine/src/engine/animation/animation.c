@@ -79,38 +79,13 @@ void animation_update(f32 dt) {
 			animation->current_frame_index += 1;
 
 			if(animation->current_frame_index == animation->definition->frame_count) {
-				animation->current_frame_index = animation->does_loop ? 0 : animation->current_frame_index - 1;
+				if(animation->does_loop)
+					animation->current_frame_index = 0;
+				else
+					animation->current_frame_index -= 1;
 			}
 
 			animation->current_frame_time = adef->frames[animation->current_frame_index].duration;
 		}
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 }
