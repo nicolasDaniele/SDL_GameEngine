@@ -31,7 +31,7 @@ void audio_sound_load(Mix_Chunk **chunk, const char *path) {
 void audio_music_load(Mix_Music **music, const char *path) {
 	*music = Mix_LoadMUS(path);
 	if(!*music) {
-		ERROR_EXIT("Failed to load music file %n: %s", path, Mix_GetError());
+		ERROR_EXIT("Failed to load music file %s: %s", path, Mix_GetError());
 	}
 }
 

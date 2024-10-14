@@ -25,6 +25,50 @@ AABB aabb_minkowski_difference(AABB a, AABB b) {
 	return result;
 }
 
+Hit ray_intersect_aabb(vec2 position, vec2 magnitude, AABB aabb) {
+	Hit hit = {0};
+	vec2 min, max;
+	aabb_min_max(min, max, aabb);
+
+	f32 last_entry = -INFINITY;
+	f32 first_exit = INFINITY;
+
+	for(ui8 i = 0; i < 2; ++i) {
+		if(magnitude[i] != 0) {
+			f32 t1 = (min[i] - position[i]) / magnitude[i];
+			f32 t2 = (max[i] - position[i]) / magnitude[i];
+
+			last_entry = fmaxf(last_entry, fminf(t1, t2));
+			first_exit = fminf(first_exit, fmaxf(t1, t2));
+		}
+		else if(position[i] <= min[i] || position[i] >= max[i]) {
+			return hit;
+		}
+	}
+
+	if(first_exit > last_entry && first_exit > 0 && last_entry < 1) {
+		hit.position[0] = position[0] + magnitude[0] * last_entry;
+		hit.position[1] = position[1] + magnitude[1] * last_entry;
+
+		hit.is_hit = true;
+		hit.time = last_entry; 
+
+		f32 dx = hit.position[0] - aabb.position[0];
+		f32 dy = hit.position[1] - aabb.position[1];
+		f32 px = aabb.half_size[0] - fabsf(dx);
+		f32 py = aabb.half_size[1] - fabsf(dy);
+
+		if(px < py) {
+			hit.normal[0] = (dx > 0) - (dx < 0);
+		}
+		else {
+			hit.normal[1] = (dy > 0) - (dy < 0);
+		}
+	}
+
+	return hit;
+}
+
 bool physics_aabb_intersect_aabb(AABB a, AABB b) {
 	vec2 min, max;
 	aabb_min_max(min, max, aabb_minkowski_difference(a, b));
@@ -69,7 +113,7 @@ void physics_init(void) {
 	state.body_list = array_list_create(sizeof(Body), 0);
 	state.static_body_list = array_list_create(sizeof(Static_Body), 0);
 
-	state.gravity = -100;
+	state.gravity = -79;
 	state.terminal_velocity = -7000;
 
 	tick_rate = 1.f / iterations;
@@ -97,7 +141,7 @@ static void update_sweep_result(Hit *result, Body *body, usize other_id, vec2 ve
 		else if(hit.time == result->time) {
 			if(fabsf(velocity[0]) > fabs(velocity[1]) && hit.normal[0] != 0) 
 				*result = hit;
-			else if(fabsf(velocity[1]) > fabs(velocity[1]) && hit.normal[1] != 0)
+			else if(fabsf(velocity[1]) > fabs(velocity[0]) && hit.normal[1] != 0)
 				*result = hit;
 		}
 
@@ -123,7 +167,7 @@ static void update_sweep_result_static(Hit *result, Body *body, usize other_id, 
 		else if(hit.time == result->time) {
 			if(fabsf(velocity[0]) > fabs(velocity[1]) && hit.normal[0] != 0) 
 				*result = hit;
-			else if(fabsf(velocity[1]) > fabs(velocity[1]) && hit.normal[1] != 0)
+			else if(fabsf(velocity[1]) > fabs(velocity[0]) && hit.normal[1] != 0)
 				*result = hit;
 		}
 
@@ -135,7 +179,6 @@ static Hit sweep_static_bodies(Body *body, vec2 velocity) {
 	Hit result = {.time = 0xBEEF};
 
 	for(ui32 i = 0; i < state.static_body_list->len; ++i) {
-		Static_Body *static_body = physics_static_body_get(i);
 		update_sweep_result_static(&result, body, i, velocity);
 	}
 
@@ -260,7 +303,7 @@ void physics_update(void) {
 	}
 }
 
-usize physics_body_create(vec2 position, vec2 size, vec2 velocity, ui8 collision_layer, ui8 collision_mask, bool is_kinematic, On_Hit on_hit, On_Hit_Static on_hit_static) {
+usize physics_body_create(vec2 position, vec2 size, vec2 velocity, ui8 collision_layer, ui8 collision_mask, bool is_kinematic, On_Hit on_hit, On_Hit_Static on_hit_static, usize entity_id) {
 	usize id = state.body_list->len;
 
 	for(usize i = 0; i < state.body_list->len; ++i) {
@@ -292,6 +335,7 @@ usize physics_body_create(vec2 position, vec2 size, vec2 velocity, ui8 collision
 		.on_hit_static = on_hit_static,
 		.is_kinematic = is_kinematic,
 		.is_active = true,
+		.entity_id = entity_id
 	};
 
 	printf("physics_body_create: id: %zd\n", id);
@@ -308,10 +352,10 @@ Body *physics_body_get(usize index) {
 usize physics_static_body_create(vec2 position, vec2 size, ui8 collision_layer) {
 	Static_Body static_body = {
 		.aabb = {
-			.position = { position[0], position[1] },
-			.half_size = { size[0] * 0.5, size[1] * 0.5 },
+			.position = {position[0], position[1]},
+			.half_size = {size[0] * 0.5, size[1] * 0.5}
 		},
-		.collision_layer = collision_layer,
+		.collision_layer = collision_layer
 	};
 
 	if(array_list_append(state.static_body_list, &static_body) == (usize)-1) {
@@ -321,50 +365,24 @@ usize physics_static_body_create(vec2 position, vec2 size, ui8 collision_layer) 
 	return state.static_body_list->len - 1;
 }
 
+usize physics_trigger_create(vec2 position, vec2 size, ui8 collision_layer, ui8 collision_mask, On_Hit on_hit) {
+	return physics_body_create(position, size, (vec2){0, 0}, collision_layer, collision_mask, true, on_hit, NULL, (usize)-1);
+}
+
 Static_Body *physics_static_body_get(usize index) {
 	return array_list_get(state.static_body_list, index);
 }
 
-Hit ray_intersect_aabb(vec2 position, vec2 magnitude, AABB aabb) {
-	Hit hit = {0};
-	vec2 min, max;
-	aabb_min_max(min, max, aabb);
+usize physics_static_body_count() {
+	return state.static_body_list->len;
+}
 
-	f32 last_entry = -INFINITY;
-	f32 first_exit = INFINITY;
+void physics_reset(void) {
+	state.static_body_list->len = 0;
+	state.body_list->len = 0;
+}
 
-	for(ui8 i = 0; i < 2; ++i) {
-		if(magnitude[i] != 0) {
-			f32 t1 = (min[i] - position[i]) / magnitude[i];
-			f32 t2 = (max[i] - position[i]) / magnitude[i];
-
-			last_entry = fmaxf(last_entry, fminf(t1, t2));
-			first_exit = fminf(first_exit, fmaxf(t1, t2));
-		}
-		else if(position[i] <= min[i] || position[i] >= max[i]) {
-			return hit;
-		}
-	}
-
-	if(first_exit > last_entry && first_exit > 0 && last_entry < 1) {
-		hit.position[0] = position[0] + magnitude[0] * last_entry;
-		hit.position[1] = position[1] + magnitude[1] * last_entry;
-
-		hit.is_hit = true;
-		hit.time = last_entry; 
-
-		f32 dx = hit.position[0] - aabb.position[0];
-		f32 dy = hit.position[1] - aabb.position[1];
-		f32 px = aabb.half_size[0] - fabsf(dx);
-		f32 py = aabb.half_size[1] - fabsf(dy);
-
-		if(px < py) {
-			hit.normal[0] = (dx > 0) - (dx < 0);
-		}
-		else {
-			hit.normal[1] = (dy > 0) - (dy < 0);
-		}
-	}
-
-	return hit;
+void physics_body_destroy(usize body_id) {	
+	Body *body = physics_body_get(body_id);
+	body->is_active = false;
 }
